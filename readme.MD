@@ -206,9 +206,9 @@ Proyecto desarrollado en equipo para la asignatura Fundamentos de Sistemas Embeb
 
 Integrantes:
 
-* Daniel Nicolás Feregrino
+* Daniel
 * Cesar Romualdo Ramírez Cervantes
-* Luis Enrique Monter Gonzalez
+* Integrante pendiente
 
 ## Licencia
 
