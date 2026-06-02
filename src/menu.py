@@ -183,13 +183,13 @@ def main():
             small_font = pygame.font.Font(FONT_FILE, 18) if os.path.exists(FONT_FILE) else pygame.font.Font(None, 24)
             
             # Esquina inferior izquierda: instrucciones del control
-            controles_txt = "FLECHAS: NAVEGAR   |   [X]: JUGAR   |   [OPTIONS]: SALIR"
+            controles_txt = "FLECHAS: NAVEGAR | [X]: JUGAR | [OPTIONS]: SALIR"
             surf_controles = small_font.render(controles_txt, True, COLOR_TEXTO_NORMAL)
             screen.blit(surf_controles, (20, sh - 35))
             
             # Esquina inferior derecha: instrucción de la USB
             usb_txt = "INSERTA UNA USB PARA AUTO-COPIAR NUEVOS JUEGOS"
-            surf_usb = small_font.render(usb_txt, True, COLOR_GRID) # púrpura neón para resaltar
+            surf_usb = small_font.render(usb_txt, True, COLOR_TEXTO_NORMAL)
             usb_rect = surf_usb.get_rect(topright=(sw - 20, sh - 35))
             screen.blit(surf_usb, usb_rect)
 
