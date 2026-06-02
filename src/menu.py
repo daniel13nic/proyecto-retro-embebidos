@@ -1,5 +1,6 @@
-import pygame
 import os
+os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
+import pygame
 import subprocess
 import sys
 import time
@@ -123,7 +124,7 @@ def main():
 
             # 2. Dibujar Título (Centrado arriba)
             # Como la imagen, usemos un nombre más corto y cool
-            text_title = "SYSTEM SETUP V1.0"
+            text_title = "SYSTEM MENU"
             title_surf = font_title.render(text_title, True, COLOR_TEXTO_TITULO)
             title_rect = title_surf.get_rect(center=(sw // 2, int(sh * 0.15)))
             
@@ -183,7 +184,7 @@ def main():
             small_font = pygame.font.Font(FONT_FILE, 18) if os.path.exists(FONT_FILE) else pygame.font.Font(None, 24)
             
             # Esquina inferior izquierda: instrucciones del control
-            controles_txt = "FLECHAS: NAVEGAR | [X]: JUGAR | [OPTIONS]: SALIR"
+            controles_txt = "[FLECHAS]: NAVEGAR | [X]: JUGAR | [OPTIONS]: SALIR"
             surf_controles = small_font.render(controles_txt, True, COLOR_TEXTO_NORMAL)
             screen.blit(surf_controles, (20, sh - 35))
             
@@ -215,8 +216,21 @@ def main():
                         pygame.quit()
                         sys.exit(0)
 
-                    elif evento.button == 9: # Botón Options para salir
-                        corriendo = False
+                    elif evento.button == 9: # Botón Options para apagar
+                        # 1. Pantalla de despedida
+                        screen.fill(COLOR_FONDOBASICO)
+                        msg_apagando = font_title.render("APAGANDO SISTEMA...", True, COLOR_ERROR)
+                        msg_rect = msg_apagando.get_rect(center=(sw // 2, sh // 2))
+                        screen.blit(msg_apagando, msg_rect)
+                        pygame.display.flip()
+                        
+                        # 2. 1.5 segundos para que el usuario lea el mensaje
+                        time.sleep(1.5)
+                        pygame.quit()
+                        
+                        # 3. Se manda la orden a nivel de hardware a la Raspberry Pi
+                        subprocess.run(["sudo", "poweroff"])
+                        sys.exit(0)
 
                 if evento.type == pygame.KEYDOWN:
                     if evento.key == pygame.K_UP and juegos:
@@ -233,7 +247,16 @@ def main():
                         sys.exit(0)
 
                     elif evento.key == pygame.K_ESCAPE:
-                        corriendo = False
+                        screen.fill(COLOR_FONDOBASICO)
+                        msg_apagando = font_title.render("APAGANDO SISTEMA...", True, COLOR_ERROR)
+                        msg_rect = msg_apagando.get_rect(center=(sw // 2, sh // 2))
+                        screen.blit(msg_apagando, msg_rect)
+                        pygame.display.flip()
+                        
+                        time.sleep(1.5)
+                        pygame.quit()
+                        subprocess.run(["sudo", "poweroff"])
+                        sys.exit(0)
 
             reloj.tick(30)
             
