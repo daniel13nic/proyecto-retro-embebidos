@@ -160,25 +160,14 @@ Actúa como orquestador del sistema. Ejecuta el menú, espera la selección de u
 
 Se ejecuta cuando udev detecta una memoria USB. Monta el dispositivo, pausa temporalmente el menú o emulador, copia las ROMS válidas al almacenamiento local y reanuda el sistema.
 
-### `scripts/boot_intro.sh`
-
-Reproduce la intro personalizada de arranque. Puede utilizar un video `intro.mp4` o una imagen `intro.png` acompañada de audio `intro.wav`.
-
 ### `systemd/retromenu.service`
 
 Servicio systemd encargado de iniciar automáticamente el menú retro en la terminal TTY1.
-
-### `systemd/splash.service`
-
-Servicio systemd encargado de ejecutar la intro personalizada de arranque.
 
 ### `udev/99-usb-sync.rules`
 
 Regla udev que detecta la conexión de una memoria USB y lanza el script de sincronización de ROMS.
 
-### `install.sh`
-
-Script de instalación automatizada. Instala dependencias, copia archivos, configura permisos, instala servicios systemd, instala la regla udev y habilita el arranque automático.
 
 ## Video demostrativo
 
