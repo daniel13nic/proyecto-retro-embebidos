@@ -180,18 +180,18 @@ def main():
 
             # 4. Decoraciones extras 
             # Texto pequeño en esquinas
-            small_font = pygame.font.Font(FONT_FILE, 16) if os.path.exists(FONT_FILE) else pygame.font.Font(None, 20)
+            small_font = pygame.font.Font(FONT_FILE, 18) if os.path.exists(FONT_FILE) else pygame.font.Font(None, 24)
             
-            # Esquina Inferior Izquierda
-            status_text = "INPUT CHECK... DS4 DETECTED"
-            surf_status = small_font.render(status_text, True, COLOR_TEXTO_NORMAL)
-            screen.blit(surf_status, (20, sh - 30))
+            # Esquina inferior izquierda: instrucciones del control
+            controles_txt = "FLECHAS: NAVEGAR   |   [X]: JUGAR   |   [OPTIONS]: SALIR"
+            surf_controles = small_font.render(controles_txt, True, COLOR_TEXTO_NORMAL)
+            screen.blit(surf_controles, (20, sh - 35))
             
-            # Esquina Inferior Derecha (Fecha simulada neón)
-            date_text = "READY - JAN 2025"
-            surf_date = small_font.render(date_text, True, COLOR_GRID)
-            date_rect = surf_date.get_rect(topright=(sw - 20, sh - 30))
-            screen.blit(surf_date, date_rect)
+            # Esquina inferior derecha: instrucción de la USB
+            usb_txt = "INSERTA UNA USB PARA AUTO-COPIAR NUEVOS JUEGOS"
+            surf_usb = small_font.render(usb_txt, True, COLOR_GRID) # púrpura neón para resaltar
+            usb_rect = surf_usb.get_rect(topright=(sw - 20, sh - 35))
+            screen.blit(surf_usb, usb_rect)
 
             pygame.display.flip()
 
