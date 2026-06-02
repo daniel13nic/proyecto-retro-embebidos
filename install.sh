@@ -51,17 +51,45 @@ sudo rsync -av \
 echo "[5/8] Instalando archivos operativos en /home/$SERVICE_USER"
 sudo cp "$INSTALL_DIR/src/menu.py" /home/"$SERVICE_USER"/menu.py
 sudo cp "$INSTALL_DIR/scripts/start.sh" /home/"$SERVICE_USER"/start.sh
+sudo cp "$INSTALL_DIR/scripts/boot_intro.sh" /home/"$SERVICE_USER"/boot_intro.sh
 sudo cp "$INSTALL_DIR/assets/retro_font.ttf" /home/"$SERVICE_USER"/retro_font.ttf
 sudo cp "$INSTALL_DIR/scripts/sync_roms.sh" /usr/local/bin/sync_roms.sh
 
+if [ -f "$INSTALL_DIR/assets/intro.mp4" ]; then
+    sudo cp "$INSTALL_DIR/assets/intro.mp4" /home/"$SERVICE_USER"/intro.mp4
+fi
+
+if [ -f "$INSTALL_DIR/assets/intro.png" ]; then
+    sudo cp "$INSTALL_DIR/assets/intro.png" /home/"$SERVICE_USER"/intro.png
+fi
+
+if [ -f "$INSTALL_DIR/assets/intro.wav" ]; then
+    sudo cp "$INSTALL_DIR/assets/intro.wav" /home/"$SERVICE_USER"/intro.wav
+fi
+
 echo "[6/8] Ajustando permisos"
 sudo chown -R "$SERVICE_USER:$SERVICE_USER" "$INSTALL_DIR"
+
 sudo chown "$SERVICE_USER:$SERVICE_USER" /home/"$SERVICE_USER"/menu.py
 sudo chown "$SERVICE_USER:$SERVICE_USER" /home/"$SERVICE_USER"/start.sh
+sudo chown "$SERVICE_USER:$SERVICE_USER" /home/"$SERVICE_USER"/boot_intro.sh
 sudo chown "$SERVICE_USER:$SERVICE_USER" /home/"$SERVICE_USER"/retro_font.ttf
 sudo chown -R "$SERVICE_USER:$SERVICE_USER" /home/"$SERVICE_USER"/roms
 
+if [ -f /home/"$SERVICE_USER"/intro.mp4 ]; then
+    sudo chown "$SERVICE_USER:$SERVICE_USER" /home/"$SERVICE_USER"/intro.mp4
+fi
+
+if [ -f /home/"$SERVICE_USER"/intro.png ]; then
+    sudo chown "$SERVICE_USER:$SERVICE_USER" /home/"$SERVICE_USER"/intro.png
+fi
+
+if [ -f /home/"$SERVICE_USER"/intro.wav ]; then
+    sudo chown "$SERVICE_USER:$SERVICE_USER" /home/"$SERVICE_USER"/intro.wav
+fi
+
 sudo chmod +x /home/"$SERVICE_USER"/start.sh
+sudo chmod +x /home/"$SERVICE_USER"/boot_intro.sh
 sudo chmod +x /usr/local/bin/sync_roms.sh
 
 echo "[7/8] Instalando servicio systemd y regla udev"
@@ -69,20 +97,29 @@ sudo sed "s/^User=pi$/User=$SERVICE_USER/" "$INSTALL_DIR/systemd/retromenu.servi
     sudo sed "s/^Group=pi$/Group=$SERVICE_USER/" | \
     sudo tee /etc/systemd/system/retromenu.service >/dev/null
 
+sudo sed "s/^User=pi$/User=$SERVICE_USER/" "$INSTALL_DIR/systemd/splash.service" | \
+    sudo sed "s/^Group=pi$/Group=$SERVICE_USER/" | \
+    sudo tee /etc/systemd/system/splash.service >/dev/null
+
 sudo cp "$INSTALL_DIR/udev/99-usb-sync.rules" /etc/udev/rules.d/99-usb-sync.rules
 
 echo "[8/8] Recargando servicios"
 sudo systemctl daemon-reload
 sudo udevadm control --reload-rules
+sudo systemctl enable splash.service
 sudo systemctl enable retromenu.service
 
 echo
 echo "Instalación terminada."
 echo
-echo "Para iniciar manualmente:"
+echo "Para iniciar manualmente la intro:"
+echo "  sudo systemctl start splash.service"
+echo
+echo "Para iniciar manualmente el menú:"
 echo "  sudo systemctl start retromenu.service"
 echo
 echo "Para revisar errores:"
+echo "  journalctl -u splash.service -e"
 echo "  journalctl -u retromenu.service -e"
 echo
 echo "Reinicia la Raspberry Pi para probar el arranque automático."
