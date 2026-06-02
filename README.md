@@ -180,7 +180,7 @@ vid/video.txt
 También debe agregarse aquí cuando esté disponible:
 
 ```text
-URL del video: pendiente
+URL del video: https://youtu.be/KZGsfkCfemg
 ```
 
 ## Repositorio
