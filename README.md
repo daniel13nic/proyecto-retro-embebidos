@@ -208,7 +208,7 @@ Integrantes:
 
 * Daniel Nicolás Feregrino
 * Cesar Romualdo Ramírez Cervantes
-* Luis Enrique Monter Gonzalez
+* Luis Enrique Monter González
 
 ## Licencia
 
