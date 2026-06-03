@@ -173,7 +173,7 @@ Regla udev que detecta la conexión de una memoria USB y detona la señal (bande
 ## Video demostrativo
 
 ```text
-URL del video: https://youtu.be/KZGsfkCfemg
+URL del video: https://youtu.be/Xch_X6m8AQw
 ```
 
 ## Repositorio
