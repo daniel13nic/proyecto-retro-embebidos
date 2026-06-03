@@ -7,7 +7,7 @@ export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/ga
 while true; do
     rm -f /tmp/next_game.txt
     
-    # NUEVO: Limpiamos por completo la pantalla y el texto viejo
+    #  Limpiamos por completo la pantalla y el texto viejo
     clear
     sleep 1
     
@@ -16,10 +16,10 @@ while true; do
     if [ -f /tmp/next_game.txt ]; then
         JUEGO=$(cat /tmp/next_game.txt)
         
-        # NUEVO: Volvemos a limpiar antes de arrancar el juego
+        #  Volvemos a limpiar antes de arrancar el juego
         clear
         
-        # NUEVO: El "> /dev/null 2>&1" absorbe todo el texto de Mednafen para que no se vea
+        #  El "> /dev/null 2>&1" absorbe todo el texto de Mednafen para que no se vea
         mednafen "$JUEGO" > /dev/null 2>&1
         
     else
