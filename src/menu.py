@@ -22,6 +22,16 @@ COLOR_TEXTO_SELECCION = (0, 255, 255) # Cian (neón)
 COLOR_TEXTO_NORMAL = (200, 200, 200) # Gris claro/blanco opaco
 COLOR_ERROR = (255, 50, 50)       # Rojo neón
 
+def formatear_nombre_juego(nombre_archivo):
+    # 1. Quitar la extensión buscando el último punto (ej. '.nes', '.sfc')
+    nombre_sin_ext = nombre_archivo.rsplit('.', 1)[0]
+    
+    # 2. Reemplazar guiones bajos y medios por espacios
+    nombre_limpio = nombre_sin_ext.replace('_', ' ').replace('-', ' ')
+    
+    # 3. Primera letra mayúscula
+    return nombre_limpio.title()
+
 def obtener_juegos():
     if not os.path.exists(ROM_DIR):
         return []
@@ -39,32 +49,24 @@ def draw_synthwave_background(screen, width, height):
         pygame.draw.line(screen, (r, g, b), (0, y), (width, y))
 
     # 2. Dibujar Cuadrícula de Perspectiva (Suelo)
-    # Definimos dónde empieza el horizonte 
     horizonte_y = int(height * 0.7)
     ground_height = height - horizonte_y
     
-    # Líneas de profundidad (fugas) que convergen en el centro del horizonte
     fuga_x = width // 2
-    fuga_y = horizonte_y - int(height * 0.1) # Punto de fuga ligeramente arriba del horizonte visible
+    fuga_y = horizonte_y - int(height * 0.1) 
     
     num_lineas_fuga = 14
     for i in range(num_lineas_fuga + 1):
-        # Calculamos puntos en el borde inferior de la pantalla
         x_final = (width / num_lineas_fuga) * i
-        # Dibujamos línea desde el horizonte hasta el borde inferior
         pygame.draw.line(screen, COLOR_GRID, (fuga_x, fuga_y), (x_final, height), 2)
 
-    # Líneas horizontales con espacio creciente (perspectiva)
     num_lineas_horiz = 8
     for i in range(num_lineas_horiz):
-        # Usamos una función exponencial simple para separar las líneas más abajo
         ratio = (i / num_lineas_horiz) ** 2
         y_horiz = horizonte_y + int(ground_height * ratio)
         pygame.draw.line(screen, COLOR_GRID, (0, y_horiz), (width, y_horiz), 1)
         
-    # Dibujar línea del horizonte neón
     pygame.draw.line(screen, COLOR_GRID, (0, horizonte_y), (width, horizonte_y), 3)
-
 
 def main():
     time.sleep(1)
@@ -77,19 +79,16 @@ def main():
         sw = screen_info.current_w
         sh = screen_info.current_h
     except:
-        # Failsafe por si KMSDRM no reporta bien el tamaño inicialmente
         sw, sh = 1920, 1080 
 
     screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
     
     # --- CARGAR FUENTE RETRO  ---
     try:
-        # Fuente más pequeña para el menú centrado 
         font_main = pygame.font.Font(FONT_FILE, 30)
-        # Fuente más grande para el título 
         font_title = pygame.font.Font(FONT_FILE, 50)
     except:
-        print("AVISO: No se encontró retro_font.ttf. Usando fuente default (se verá mal).")
+        print("AVISO: No se encontró retro_font.ttf. Usando fuente default.")
         font_main = pygame.font.Font(None, 40)
         font_title = pygame.font.Font(None, 70)
 
@@ -108,7 +107,93 @@ def main():
     try:
         while corriendo:
             
-            # Escaneo forzado cada 2 segundos
+            # --- INTERRUPCIÓN: VERIFICACIÓN DE USB ---
+            if os.path.exists('/tmp/usb_pending'):
+                rect_w, rect_h = 700, 400
+                rect_x, rect_y = (sw - rect_w) // 2, (sh - rect_h) // 2
+                
+                pygame.draw.rect(screen, COLOR_FONDOBASICO, (rect_x, rect_y, rect_w, rect_h))
+                pygame.draw.rect(screen, COLOR_TEXTO_TITULO, (rect_x, rect_y, rect_w, rect_h), 5)
+                
+                texto_aviso = font_main.render("USB DETECTADA. ¿COPIAR ROMS?", True, (255, 255, 255))
+                texto_opciones = font_main.render("[X] SÍ   /   [O] NO", True, COLOR_TEXTO_SELECCION)
+                
+                screen.blit(texto_aviso, (rect_x + 50, rect_y + 100))
+                screen.blit(texto_opciones, (rect_x + 180, rect_y + 200))
+                pygame.display.flip()
+                
+                esperando_respuesta = True
+                while esperando_respuesta:
+                    for event in pygame.event.get():
+                        if event.type == pygame.JOYBUTTONDOWN:
+                            if event.button == 0: # Botón X (SÍ)
+                                # Pantalla de carga
+                                pygame.draw.rect(screen, COLOR_FONDOBASICO, (rect_x, rect_y, rect_w, rect_h))
+                                pygame.draw.rect(screen, COLOR_TEXTO_TITULO, (rect_x, rect_y, rect_w, rect_h), 5)
+                                texto_trabajando = font_main.render("COPIANDO ARCHIVOS...", True, (255, 255, 255))
+                                screen.blit(texto_trabajando, (rect_x + 120, rect_y + 150))
+                                pygame.display.flip()
+                                
+                                # Ejecutar copia real
+                                subprocess.run(["sudo", "/usr/local/bin/sync_roms.sh"])
+                                
+                                # Leer resultados
+                                juegos_nuevos = []
+                                if os.path.exists('/tmp/juegos_copiados.txt'):
+                                    with open('/tmp/juegos_copiados.txt', 'r') as f:
+                                        juegos_nuevos = f.readlines()
+                                
+                                # Mostrar resumen
+                                pygame.draw.rect(screen, COLOR_FONDOBASICO, (rect_x, rect_y, rect_w, rect_h))
+                                pygame.draw.rect(screen, COLOR_TEXTO_TITULO, (rect_x, rect_y, rect_w, rect_h), 5)
+                                
+                                if len(juegos_nuevos) > 0:
+                                    resumen = font_main.render(f"¡SE COPIARON {len(juegos_nuevos)} JUEGOS!", True, (0, 255, 0))
+                                    screen.blit(resumen, (rect_x + 50, rect_y + 50))
+                                    y_pos = rect_y + 120
+                                    for juego_txt in juegos_nuevos[:4]:
+                                        txt_juego = font_main.render("- " + juego_txt.strip(), True, (255, 255, 255))
+                                        screen.blit(txt_juego, (rect_x + 50, y_pos))
+                                        y_pos += 40
+                                    if len(juegos_nuevos) > 4:
+                                        txt_mas = font_main.render(f"...y {len(juegos_nuevos)-4} más.", True, COLOR_TEXTO_NORMAL)
+                                        screen.blit(txt_mas, (rect_x + 50, y_pos))
+                                else:
+                                    resumen = font_main.render("NO SE ENCONTRARON JUEGOS NUEVOS.", True, COLOR_ERROR)
+                                    screen.blit(resumen, (rect_x + 50, rect_y + 150))
+                                
+                                continuar = font_main.render("PRESIONA [X] PARA CONTINUAR", True, COLOR_TEXTO_TITULO)
+                                screen.blit(continuar, (rect_x + 50, rect_y + 320))
+                                pygame.display.flip()
+                                
+                                esperando_resumen = True
+                                while esperando_resumen:
+                                    for ev in pygame.event.get():
+                                        if ev.type == pygame.JOYBUTTONDOWN and ev.button == 0:
+                                            esperando_resumen = False
+                                
+                                esperando_respuesta = False
+                                
+                            elif event.button == 1: # Botón O (NO)
+                                esperando_respuesta = False
+
+                # Limpiar banderas y recargar lista de ROMs
+                try:
+                    if os.path.exists('/tmp/usb_pending'):
+                        os.remove('/tmp/usb_pending')
+                    if os.path.exists('/tmp/juegos_copiados.txt'):
+                        os.remove('/tmp/juegos_copiados.txt')
+                except PermissionError:
+                       pass
+                
+                juegos = obtener_juegos()
+                indice_seleccionado = 0
+                continue # Reiniciar el ciclo principal para limpiar la pantalla
+
+
+            # --- LÓGICA NORMAL DEL MENÚ ---
+            
+            # Escaneo forzado cada 2 segundos (por si acaso)
             frames_desde_revision += 1
             if frames_desde_revision >= 60: 
                 frames_desde_revision = 0
@@ -117,18 +202,14 @@ def main():
                     juegos = juegos_nuevos
                     indice_seleccionado = 0
 
-            # --- NUEVA LÓGICA DE DIBUJO ---
-            
             # 1. Fondo Synthwave (Gradiente + Cuadrícula)
             draw_synthwave_background(screen, sw, sh)
 
             # 2. Dibujar Título (Centrado arriba)
-            # Como la imagen, usemos un nombre más corto y cool
             text_title = "SYSTEM MENU"
             title_surf = font_title.render(text_title, True, COLOR_TEXTO_TITULO)
             title_rect = title_surf.get_rect(center=(sw // 2, int(sh * 0.15)))
             
-            # Efecto de brillo simple (dibujar Magenta oscuro detrás)
             title_glow = font_title.render(text_title, True, (100, 0, 100))
             glow_rect = title_glow.get_rect(center=(sw // 2 + 3, int(sh * 0.15) + 3))
             screen.blit(title_glow, glow_rect)
@@ -141,54 +222,44 @@ def main():
                 msg_rect = mensaje.get_rect(center=(sw // 2, sh // 2))
                 screen.blit(mensaje, msg_rect)
             else:
-                # Ajustamos la altura inicial y el espacio para que quepan 12 cómodamente
                 start_y_list = int(sh * 0.20)
                 spacing_y = 40 
                 max_visibles = 12
                 
-                # --- Lógica de Scroll (Cámara) ---
                 inicio_lista = 0
                 if len(juegos) > max_visibles:
-                    # Centramos el cursor para que la lista suba o baje al navegar
                     inicio_lista = max(0, indice_seleccionado - (max_visibles // 2))
-                    # Evitamos que la cámara baje más allá del último juego
                     if inicio_lista > len(juegos) - max_visibles:
                         inicio_lista = len(juegos) - max_visibles
 
-                # Cortamos la lista solo a los juegos que caben en la pantalla
                 juegos_visibles = juegos[inicio_lista : inicio_lista + max_visibles]
                 
                 for i, juego in enumerate(juegos_visibles):
-                    # Recuperamos su índice real para saber si está seleccionado
                     indice_real = i + inicio_lista
+                    nombre_estetico = formatear_nombre_juego(juego)
                     
                     if indice_real == indice_seleccionado:
-                        texto_completo = f"> {juego} <"
+                        texto_completo = f"> {nombre_estetico} <"
                         color_render = COLOR_TEXTO_SELECCION
                     else:
-                        texto_completo = juego
+                        texto_completo = nombre_estetico
                         color_render = COLOR_TEXTO_NORMAL
                         
                     texto_surf = font_main.render(texto_completo, True, color_render)
                     
-                    # Calculamos posición
                     curr_y = start_y_list + (i * spacing_y)
                     texto_rect = texto_surf.get_rect(center=(sw // 2, curr_y))
                     
-                    # Dibujamos siempre y cuando no pise el suelo de neón
                     if int(sh * 0.7) > curr_y + 20:
                         screen.blit(texto_surf, texto_rect)
 
             # 4. Decoraciones extras 
-            # Texto pequeño en esquinas
             small_font = pygame.font.Font(FONT_FILE, 18) if os.path.exists(FONT_FILE) else pygame.font.Font(None, 24)
             
-            # Esquina inferior izquierda: instrucciones del control
             controles_txt = "[FLECHAS]: NAVEGAR | [X]: JUGAR | [OPTIONS]: SALIR"
             surf_controles = small_font.render(controles_txt, True, COLOR_TEXTO_NORMAL)
             screen.blit(surf_controles, (20, sh - 35))
             
-            # Esquina inferior derecha: instrucción de la USB
             usb_txt = "INSERTA UNA USB PARA AUTO-COPIAR NUEVOS JUEGOS"
             surf_usb = small_font.render(usb_txt, True, COLOR_TEXTO_NORMAL)
             usb_rect = surf_usb.get_rect(topright=(sw - 20, sh - 35))
@@ -200,7 +271,7 @@ def main():
             for evento in pygame.event.get():
                 if evento.type == pygame.JOYHATMOTION:
                     x, y = evento.value
-                    if juegos: # Failsafe si la lista está vacía
+                    if juegos: 
                         if y == 1:
                             indice_seleccionado = (indice_seleccionado - 1) % len(juegos)
                         elif y == -1:
@@ -216,19 +287,16 @@ def main():
                         pygame.quit()
                         sys.exit(0)
 
-                    elif evento.button == 9: # Botón Options para apagar
-                        # 1. Pantalla de despedida
+                    elif evento.button == 9: 
                         screen.fill(COLOR_FONDOBASICO)
                         msg_apagando = font_title.render("APAGANDO SISTEMA...", True, COLOR_ERROR)
                         msg_rect = msg_apagando.get_rect(center=(sw // 2, sh // 2))
                         screen.blit(msg_apagando, msg_rect)
                         pygame.display.flip()
                         
-                        # 2. 1.5 segundos para que el usuario lea el mensaje
                         time.sleep(1.5)
                         pygame.quit()
                         
-                        # 3. Se manda la orden a nivel de hardware a la Raspberry Pi
                         subprocess.run(["sudo", "poweroff"])
                         sys.exit(0)
 
