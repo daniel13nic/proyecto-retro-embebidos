@@ -10,6 +10,7 @@ ROM_DIR = "/home/pi/roms"
 EMULATOR = "mednafen"
 # Ruta a la fuente
 FONT_FILE = "/home/pi/retro_font.ttf" 
+AUDIO_USB = "/home/pi/assets/moneda.wav"
 
 os.environ["SDL_VIDEODRIVER"] = "kmsdrm"
 
@@ -71,6 +72,7 @@ def draw_synthwave_background(screen, width, height):
 def main():
     time.sleep(1)
     pygame.init()
+    pygame.mixer.init()
     pygame.joystick.init()
 
     # Obtener info de pantalla para centrado dinámico
@@ -105,11 +107,19 @@ def main():
     frames_desde_revision = 0
 
     try:
+        sonido_alerta = pygame.mixer.Sound(AUDIO_USB)
+        sonido_alerta.set_volume(0.8) 
+    except:
+        print("AVISO: No se encontró el archivo de audio para la USB.")
+        sonido_alerta = None
+
+    try:
         while corriendo:
             
             # --- INTERRUPCIÓN: VERIFICACIÓN DE USB ---
             if os.path.exists('/tmp/usb_pending'):
-                rect_w, rect_h = 700, 400
+                # 1. Aumentamos las dimensiones: Ancho a 1100 y Alto a 650
+                rect_w, rect_h = 1100, 650
                 rect_x, rect_y = (sw - rect_w) // 2, (sh - rect_h) // 2
                 
                 pygame.draw.rect(screen, COLOR_FONDOBASICO, (rect_x, rect_y, rect_w, rect_h))
@@ -118,9 +128,14 @@ def main():
                 texto_aviso = font_main.render("USB DETECTADA. ¿COPIAR ROMS?", True, (255, 255, 255))
                 texto_opciones = font_main.render("[X] SÍ   /   [O] NO", True, COLOR_TEXTO_SELECCION)
                 
-                screen.blit(texto_aviso, (rect_x + 50, rect_y + 100))
-                screen.blit(texto_opciones, (rect_x + 180, rect_y + 200))
+                # 2. Centramos dinámicamente el texto de aviso según el nuevo ancho
+                screen.blit(texto_aviso, (rect_x + (rect_w - texto_aviso.get_width()) // 2, rect_y + 100))
+                screen.blit(texto_opciones, (rect_x + (rect_w - texto_opciones.get_width()) // 2, rect_y + 200))
                 pygame.display.flip()
+
+                # --- REPRODUCIR SONIDO AQUÍ ---
+                if sonido_alerta:
+                    sonido_alerta.play()
                 
                 esperando_respuesta = True
                 while esperando_respuesta:
@@ -131,7 +146,7 @@ def main():
                                 pygame.draw.rect(screen, COLOR_FONDOBASICO, (rect_x, rect_y, rect_w, rect_h))
                                 pygame.draw.rect(screen, COLOR_TEXTO_TITULO, (rect_x, rect_y, rect_w, rect_h), 5)
                                 texto_trabajando = font_main.render("COPIANDO ARCHIVOS...", True, (255, 255, 255))
-                                screen.blit(texto_trabajando, (rect_x + 120, rect_y + 150))
+                                screen.blit(texto_trabajando, (rect_x + (rect_w - texto_trabajando.get_width()) // 2, rect_y + 250))
                                 pygame.display.flip()
                                 
                                 # Ejecutar copia real
@@ -150,20 +165,29 @@ def main():
                                 if len(juegos_nuevos) > 0:
                                     resumen = font_main.render(f"¡SE COPIARON {len(juegos_nuevos)} JUEGOS!", True, (0, 255, 0))
                                     screen.blit(resumen, (rect_x + 50, rect_y + 50))
-                                    y_pos = rect_y + 120
-                                    for juego_txt in juegos_nuevos[:4]:
-                                        txt_juego = font_main.render("- " + juego_txt.strip(), True, (255, 255, 255))
+                                    
+                                    y_pos = rect_y + 110
+                                    # 3. Ampliamos el rango a 10 juegos
+                                    for juego_txt in juegos_nuevos[:10]:
+                                        # Recortar el nombre si es excesivamente largo para no salir de la ventana
+                                        nombre_juego = juego_txt.strip()
+                                        if len(nombre_juego) > 55:
+                                            nombre_juego = nombre_juego[:52] + "..."
+                                            
+                                        txt_juego = font_main.render("- " + nombre_juego, True, (255, 255, 255))
                                         screen.blit(txt_juego, (rect_x + 50, y_pos))
                                         y_pos += 40
-                                    if len(juegos_nuevos) > 4:
-                                        txt_mas = font_main.render(f"...y {len(juegos_nuevos)-4} más.", True, COLOR_TEXTO_NORMAL)
+                                        
+                                    if len(juegos_nuevos) > 10:
+                                        txt_mas = font_main.render(f"...y {len(juegos_nuevos)-10} más.", True, COLOR_TEXTO_NORMAL)
                                         screen.blit(txt_mas, (rect_x + 50, y_pos))
                                 else:
                                     resumen = font_main.render("NO SE ENCONTRARON JUEGOS NUEVOS.", True, COLOR_ERROR)
-                                    screen.blit(resumen, (rect_x + 50, rect_y + 150))
+                                    screen.blit(resumen, (rect_x + (rect_w - resumen.get_width()) // 2, rect_y + 250))
                                 
+                                # 4. Bajamos el texto de continuar para que no se empalme con la lista
                                 continuar = font_main.render("PRESIONA [X] PARA CONTINUAR", True, COLOR_TEXTO_TITULO)
-                                screen.blit(continuar, (rect_x + 50, rect_y + 320))
+                                screen.blit(continuar, (rect_x + (rect_w - continuar.get_width()) // 2, rect_y + 580))
                                 pygame.display.flip()
                                 
                                 esperando_resumen = True
@@ -189,7 +213,6 @@ def main():
                 juegos = obtener_juegos()
                 indice_seleccionado = 0
                 continue # Reiniciar el ciclo principal para limpiar la pantalla
-
 
             # --- LÓGICA NORMAL DEL MENÚ ---
             
